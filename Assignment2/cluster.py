@@ -5,6 +5,7 @@ File:		cluster.py
 Date:		Monday Feb 19, 2018
 Description:	Implements k-means clustering using the Jaccard distance 
 		for a set of tweets
+Usage:		Python cluster.py
 '''
 import json
 
@@ -14,7 +15,7 @@ def distance(a, b):
 	intersection_length =len(intersection)
 	union = list(set(a) | set(b))
 	union_length = len(union)
-	distance = round(1 - (float(intersection_length)/union_length), 4)
+	distance = 1 - (float(intersection_length)/union_length)
 	return distance
 
 # compute_new_centroids:	Computes new centroids based on how the data points
@@ -39,15 +40,13 @@ def compute_new_centroids(tweets, mean_indices):
 		for inner_distance in distances:
 			sum_dist = sum(inner_distance)
 			sums.append(sum_dist)
-		#print "sums"
-		#print sums
 	return [distances, sums]
 
 
 # cluster:			Clusters the tweets into groups according to their jaccard distance
 #				and centroids
 def cluster(k, tweets, ids, seeds):
-
+	print "Performing clustering..."
 	# Perform the clustering
 	for i in range(len(seeds)):
 
@@ -72,6 +71,8 @@ def cluster(k, tweets, ids, seeds):
 			index_of_minimum_distance = distances.index(minimum_distance)
  			cluster.append(index_of_minimum_distance)
 
+ 			
+
  		indices = []
  		new_centroid_indices = []
  		for kmean in range(k):
@@ -92,10 +93,42 @@ def cluster(k, tweets, ids, seeds):
 		 	minimum_sum_dist_index = new_centroid_dist_and_sum[1].index(minimum_sum_dist)
 		 	new_centroid_indices.append(mean_indices[minimum_sum_dist_index])
 
-	new_centroids = []
-	for index in new_centroid_indices:
-		new_centroids.append(ids[index])
-	print new_centroids
+		new_centroids = []
+		for index in new_centroid_indices:
+			new_centroids.append(ids[index])
+
+		# Compare new and old centroids
+		total_sum = 0
+		for index in range(k):
+			if (new_centroids[index]==seeds[index]):
+				total_sum += 1
+		if (total_sum == k):		# The algorithm is considered to converge when the assignment of data points to clusters no longer changes.
+			break;   
+		counter = 0
+		for centroid in new_centroids:
+			seeds[counter] = centroid
+			counter += 1
+	# End clustering loop
+
+	# Output to the file
+	final_clusters = []
+	write_to_file = []
+	f = open("results.txt", "w")	
+	for mean in range(k):
+		list_tweet = []
+		for tweet_id, cluster_id in enumerate(cluster):
+			if cluster_id == mean:
+				list_tweet.append(tweet_id)
+		final_clusters.append(list_tweet)
+	counter = 1
+	for cluster in final_clusters:
+		id_list = []
+		for id in cluster:
+			id_list.append(ids[id])
+		print >> f, counter, ":", id_list
+		counter += 1
+	print "Clustering completed:"
+	print "\t Tweets were grouped into "+str(k)+" clusters (results in the results.txt file)."
 
 
 
