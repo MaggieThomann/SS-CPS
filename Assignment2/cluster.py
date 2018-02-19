@@ -35,19 +35,18 @@ def compute_new_centroids(tweets, mean_indices):
 				inner_distances.append(dist)
 			distances.append(inner_distances)
 		# Sum all the distances
-		print distances
 		sums = []
 		for inner_distance in distances:
 			sum_dist = sum(inner_distance)
 			sums.append(sum_dist)
 		#print "sums"
 		#print sums
-	return sums
+	return [distances, sums]
 
 
 # cluster:			Clusters the tweets into groups according to their jaccard distance
 #				and centroids
-def cluster(k, tweets, seeds):
+def cluster(k, tweets, ids, seeds):
 
 	# Perform the clustering
 	for i in range(len(seeds)):
@@ -74,6 +73,7 @@ def cluster(k, tweets, seeds):
  			cluster.append(index_of_minimum_distance)
 
  		indices = []
+ 		new_centroid_indices = []
  		for kmean in range(k):
  			indices_list = []
 			for tweet_id, cluster_id in enumerate(cluster):
@@ -81,12 +81,21 @@ def cluster(k, tweets, seeds):
 					indices_list.append(tweet_id)
 			indices.append(indices_list)
 			mean_indices=indices[kmean]
-
-			print "MEAN INDICES:"
-			print mean_indices
-		
 			# Compute the new centroids based on the updated assignment of data points to clusters.
- 			new_centroid_sums = compute_new_centroids(tweets, mean_indices)
+ 			new_centroid_dist_and_sum = compute_new_centroids(tweets, mean_indices)
+ 	
+		 	dists_sum = []
+		 	for dist in new_centroid_dist_and_sum[0]:
+		 		sum_dist = sum(dist)
+		 		dists_sum.append(sum_dist)
+		 	minimum_sum_dist = min(dists_sum)
+		 	minimum_sum_dist_index = new_centroid_dist_and_sum[1].index(minimum_sum_dist)
+		 	new_centroid_indices.append(mean_indices[minimum_sum_dist_index])
+
+	new_centroids = []
+	for index in new_centroid_indices:
+		new_centroids.append(ids[index])
+	print new_centroids
 
 
 
@@ -94,10 +103,12 @@ def cluster(k, tweets, seeds):
 def read_file(file):
 	f = open(file)
 	tweets = []
+	ids = []
 	for line in f:
 		tweet = json.loads(line)
 		tweets.append(tweet)
-	return tweets
+		ids.append(tweet['id'])
+	return tweets, ids
 
 # read_seeds:			Reads in the initial seeds from the file and returns it as a list
 def read_seeds(file):
@@ -112,8 +123,8 @@ def read_seeds(file):
 
 
 # Main Execution
-tweets = read_file('tweets.json')
+tweets, ids = read_file('tweets.json')
 seeds = read_seeds('initial_seeds.txt')
-cluster(25, tweets, seeds)
+cluster(25, tweets, ids, seeds)
 
 
